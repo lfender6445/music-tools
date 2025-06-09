@@ -16,7 +16,7 @@ install:
 
 # Clean output directory
 clean:
-	rm -rf output/
+	rm -rf output_beat/
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 
 # Run tests (placeholder for now)
