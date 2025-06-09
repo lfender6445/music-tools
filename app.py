@@ -45,6 +45,10 @@ class MP3Chopper:
         tempo, beats = librosa.beat.beat_track(y=audio_mono, sr=sr)
         beat_times = librosa.frames_to_time(beats, sr=sr)
         
+        # Extract scalar tempo value if it's an array
+        if isinstance(tempo, np.ndarray):
+            tempo = tempo.item()
+            
         print(f"Detected tempo: {tempo:.2f} BPM")
         print(f"Found {len(beats)} beats")
         
