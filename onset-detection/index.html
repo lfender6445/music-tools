@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onset Detection Audio Player</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .audio-player {
+            margin-bottom: 30px;
+        }
+        
+        audio {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .timeline {
+            position: relative;
+            height: 60px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .marker {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            top: 0;
+        }
+        
+        .onset-marker {
+            background-color: #dc3545;
+            opacity: 0.6;
+        }
+        
+        .beat-marker {
+            background-color: #28a745;
+            opacity: 0.4;
+        }
+        
+        .current-time {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background-color: #007bff;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        .pitch-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+        
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Onset Detection Audio Player</h1>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div class="audio-player">
+            <audio id="audioPlayer" controls>
+                <source src="output/sample-30s.mp3" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        
+        <div class="controls">
+            <button id="loadTimemap">Load Timemap</button>
+            <button id="toggleOnsets" disabled>Toggle Onsets</button>
+            <button id="toggleBeats" disabled>Toggle Beats</button>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #dc3545;"></div>
+                <span>Onsets</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #28a745;"></div>
+                <span>Beats</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #007bff;"></div>
+                <span>Current Position</span>
+            </div>
+        </div>
+        
+        <div class="timeline" id="timeline">
+            <div class="current-time" id="currentTime"></div>
+        </div>
+        
+        <div class="info">
+            <div>Duration: <span id="duration">-</span></div>
+            <div>Tempo: <span id="tempo">-</span></div>
+            <div>Onsets: <span id="onsetCount">-</span></div>
+            <div>Beats: <span id="beatCount">-</span></div>
+            <div class="pitch-display">Current Pitch: <span id="currentPitch">-</span></div>
+        </div>
+    </div>
+    
+    <script>
+        let timemap = null;
+        let showOnsets = true;
+        let showBeats = true;
+        
+        const audioPlayer = document.getElementById('audioPlayer');
+        const timeline = document.getElementById('timeline');
+        const currentTimeMarker = document.getElementById('currentTime');
+        const errorDiv = document.getElementById('error');
+        
+        // Load timemap
+        document.getElementById('loadTimemap').addEventListener('click', async () => {
+            try {
+                const response = await fetch('output/timemap.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load timemap.json');
+                }
+                
+                timemap = await response.json();
+                displayTimemap();
+                
+                // Enable toggle buttons
+                document.getElementById('toggleOnsets').disabled = false;
+                document.getElementById('toggleBeats').disabled = false;
+                
+                errorDiv.style.display = 'none';
+            } catch (error) {
+                errorDiv.textContent = `Error: ${error.message}. Make sure to run 'make all' first.`;
+                errorDiv.style.display = 'block';
+            }
+        });
+        
+        // Display timemap information
+        function displayTimemap() {
+            if (!timemap) return;
+            
+            // Update info
+            document.getElementById('duration').textContent = `${timemap.metadata.duration.toFixed(2)}s`;
+            document.getElementById('tempo').textContent = `${timemap.metadata.tempo.toFixed(2)} BPM`;
+            document.getElementById('onsetCount').textContent = timemap.onsets.length;
+            document.getElementById('beatCount').textContent = timemap.beats.length;
+            
+            // Clear existing markers
+            timeline.querySelectorAll('.marker').forEach(m => m.remove());
+            
+            // Add onset markers
+            if (showOnsets) {
+                timemap.onsets.forEach(time => {
+                    const marker = document.createElement('div');
+                    marker.className = 'marker onset-marker';
+                    marker.style.left = `${(time / timemap.metadata.duration) * 100}%`;
+                    timeline.appendChild(marker);
+                });
+            }
+            
+            // Add beat markers
+            if (showBeats) {
+                timemap.beats.forEach(time => {
+                    const marker = document.createElement('div');
+                    marker.className = 'marker beat-marker';
+                    marker.style.left = `${(time / timemap.metadata.duration) * 100}%`;
+                    timeline.appendChild(marker);
+                });
+            }
+        }
+        
+        // Toggle onsets
+        document.getElementById('toggleOnsets').addEventListener('click', () => {
+            showOnsets = !showOnsets;
+            displayTimemap();
+        });
+        
+        // Toggle beats
+        document.getElementById('toggleBeats').addEventListener('click', () => {
+            showBeats = !showBeats;
+            displayTimemap();
+        });
+        
+        // Update current time marker and pitch
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (!timemap) return;
+            
+            const currentTime = audioPlayer.currentTime;
+            const duration = audioPlayer.duration;
+            
+            // Update position marker
+            currentTimeMarker.style.left = `${(currentTime / duration) * 100}%`;
+            
+            // Find current pitch
+            let currentPitch = '-';
+            for (let i = timemap.pitch_info.length - 1; i >= 0; i--) {
+                if (currentTime >= timemap.pitch_info[i].time) {
+                    currentPitch = timemap.pitch_info[i].pitch;
+                    break;
+                }
+            }
+            document.getElementById('currentPitch').textContent = currentPitch;
+        });
+        
+        // Auto-load timemap on page load
+        window.addEventListener('load', () => {
+            document.getElementById('loadTimemap').click();
+        });
+    </script>
+</body>
+</html>
