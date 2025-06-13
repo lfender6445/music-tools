@@ -1,3 +1,4 @@
+## prompt
 Help me build an onset detection library with Python using PyDub for audio format standardization and Librosa for feature extraction and onset detection.
 
 The goal is to use pitch and onset information to export a standard time map to later be used for temporal alignment for web based audio playback
