@@ -21,7 +21,7 @@ timemap: sample
 	$(PYTHON) generate_timemap.py $(SAMPLE_OUTPUT) $(TIMEMAP_OUTPUT)
 
 # Generate timemap and plot with pitch markers
-timemap:plot: timemap
+plot: timemap
 	$(PYTHON) plot_timemap.py $(SAMPLE_OUTPUT) $(TIMEMAP_OUTPUT) $(PLOT_OUTPUT)
 
 # Run both commands
@@ -31,4 +31,4 @@ all: sample timemap
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-.PHONY: sample timemap timemap:plot all clean
+.PHONY: sample timemap plot all clean
