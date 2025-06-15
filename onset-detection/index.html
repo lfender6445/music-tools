@@ -134,6 +134,15 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+        
+        .plot-container {
+            margin-top: 30px;
+        }
+        
+        .plot-container h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -181,6 +190,11 @@
             <div>Beats: <span id="beatCount">-</span></div>
             <div class="pitch-display">Current Pitch: <span id="currentPitch">-</span></div>
         </div>
+        
+        <div class="plot-container" id="plotContainer" style="display: none;">
+            <h2>Waveform with Pitch Markers</h2>
+            <img id="waveformPlot" src="output/waveform_pitch_plot.png" alt="Waveform with pitch markers" style="width: 100%; border-radius: 5px; margin-top: 20px;">
+        </div>
     </div>
     
     <script>
@@ -209,6 +223,17 @@
                 document.getElementById('toggleBeats').disabled = false;
                 
                 errorDiv.style.display = 'none';
+                
+                // Try to load and display the plot image
+                const plotImg = document.getElementById('waveformPlot');
+                plotImg.onerror = function() {
+                    console.log('Plot image not found. Run "make plot" to generate it.');
+                };
+                plotImg.onload = function() {
+                    document.getElementById('plotContainer').style.display = 'block';
+                };
+                // Force reload the image
+                plotImg.src = 'output/waveform_pitch_plot.png?' + new Date().getTime();
             } catch (error) {
                 errorDiv.textContent = `Error: ${error.message}. Make sure to run 'make all' first.`;
                 errorDiv.style.display = 'block';
