@@ -7,6 +7,8 @@ import json
 import numpy as np
 import librosa
 from pathlib import Path
+import matplotlib.pyplot as plt
+import librosa.display
 
 
 class OnsetDetector:
@@ -122,3 +124,67 @@ class OnsetDetector:
             json.dump(timemap, f, indent=2)
 
         print(f"Timemap saved to {output_file}")
+
+    def plot_waveform_with_pitch_markers(self, timemap=None, output_file=None):
+        """Plot waveform with pitch markers"""
+        if timemap is None:
+            timemap = self.generate_timemap()
+        
+        # Create figure and axis
+        plt.figure(figsize=(14, 8))
+        
+        # Plot waveform
+        ax1 = plt.subplot(2, 1, 1)
+        librosa.display.waveshow(self.y, sr=self.sr, alpha=0.6)
+        plt.title('Waveform with Pitch Markers')
+        
+        # Plot pitch markers
+        pitch_colors = {
+            'C': '#FF0000', 'C#': '#FF4500', 'D': '#FFA500', 'D#': '#FFD700',
+            'E': '#FFFF00', 'F': '#ADFF2F', 'F#': '#00FF00', 'G': '#00CED1',
+            'G#': '#0000FF', 'A': '#4B0082', 'A#': '#8B008B', 'B': '#FF1493'
+        }
+        
+        for pitch_event in timemap['pitch_info']:
+            time = pitch_event['time']
+            pitch = pitch_event['pitch']
+            confidence = pitch_event['confidence']
+            
+            # Draw vertical line at onset time
+            plt.axvline(x=time, color=pitch_colors.get(pitch, 'gray'), 
+                       alpha=confidence * 0.8, linewidth=2)
+            
+            # Add pitch label
+            plt.text(time, plt.ylim()[1] * 0.9, pitch, 
+                    rotation=90, verticalalignment='bottom',
+                    color=pitch_colors.get(pitch, 'gray'), fontsize=8)
+        
+        plt.xlabel('Time (s)')
+        plt.ylabel('Amplitude')
+        
+        # Plot onset strength and beats
+        ax2 = plt.subplot(2, 1, 2)
+        onset_env = librosa.onset.onset_strength(y=self.y, sr=self.sr)
+        times = librosa.times_like(onset_env, sr=self.sr)
+        plt.plot(times, onset_env, label='Onset Strength')
+        
+        # Mark detected onsets
+        plt.vlines(timemap['onsets'], 0, onset_env.max(), color='r', alpha=0.5, 
+                  linestyle='--', label='Onsets')
+        
+        # Mark beats
+        plt.vlines(timemap['beats'], 0, onset_env.max(), color='b', alpha=0.5,
+                  linestyle=':', label='Beats')
+        
+        plt.xlabel('Time (s)')
+        plt.ylabel('Onset Strength')
+        plt.legend()
+        plt.title(f'Onset Detection (Tempo: {timemap["metadata"]["tempo"]:.1f} BPM)')
+        
+        plt.tight_layout()
+        
+        if output_file:
+            plt.savefig(output_file, dpi=300, bbox_inches='tight')
+            print(f"Plot saved to {output_file}")
+        else:
+            plt.show()
