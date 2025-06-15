@@ -4,7 +4,7 @@ PYTHON = python3
 MP3_DIR = mp3
 OUTPUT_DIR = output
 SAMPLE_FILE = $(MP3_DIR)/variation-1.mp3
-SAMPLE_OUTPUT = $(OUTPUT_DIR)/sample-5s.mp3
+SAMPLE_OUTPUT = $(OUTPUT_DIR)/sample-$(SAMPLE_DURATION)s.mp3
 TIMEMAP_OUTPUT = $(OUTPUT_DIR)/timemap.json
 PLOT_OUTPUT = $(OUTPUT_DIR)/waveform_pitch_plot.png
 
