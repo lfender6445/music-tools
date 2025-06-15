@@ -27,8 +27,12 @@ plot: timemap
 # Run both commands
 all: sample timemap
 
+# Start web server
+server:
+	$(PYTHON) server.py
+
 # Clean generated files
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-.PHONY: sample timemap plot all clean
+.PHONY: sample timemap plot all clean server
